@@ -1,0 +1,3 @@
+[submodule "hyakuninissyu-csv"]
+	path = hyakuninissyu-csv
+	url = https://github.com/StoneLabs/hyakuninissyu-csv.git
