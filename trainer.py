@@ -3,27 +3,58 @@ import csv
 import os
 import random
 import time
-import pygame
 import chime
+import sys
+import tty
 
 from typing import Any
 from pynput import keyboard
 
+from os import environ
+environ['PYGAME_HIDE_SUPPORT_PROMPT'] = '1'
+import pygame
+pygame.init()  # Initialize pygame mixer
+pygame.mixer.init()
+
+from rich.traceback import install
+install(show_locals=True)
+
+from rich.text import Text
+from rich.console import Console
+console = Console()
+print = console.print
+input = console.input
+
+
 args: Any = None #type: ignore
 
+lock_pause = True
 paused = False
 def toggle_pause():
+    global lock_pause
     global paused
+    
+    if lock_pause:
+        return
+
     paused = not paused
     if (paused):
         pygame.mixer.music.pause()
     else:
         pygame.mixer.music.unpause()
-    print(f'{"\r -- Paused! --\r" if paused else "\r --Unpaused!--\r"}', end="")
+    print(f'{"[bright_black] ‹Paused› [/bright_black]" if paused else "[bright_black]‹Unpaused›[/bright_black]"}', end="\b"*10)
+
+def wait_until_enter():
+    global lock_pause
+    
+    lock_pause = True
+    input()
+    lock_pause = False
 
 listener = keyboard.GlobalHotKeys({
         '<space>': toggle_pause})
 listener.start()
+tty.setcbreak(sys.stdin.fileno())
 
 # Map English color names to Japanese kanji
 COLOR_MAPPING = {
@@ -38,7 +69,7 @@ class dotdict(dict):
     """dot.notation access to dictionary attributes"""
     __getattr__ = dict.get
     __setattr__ = dict.__setitem__
-    __delattr__ = dict.__delitem__
+__delattr__ = dict.__delitem__
 
 def load_poem_ids_by_color(csv_file, color):
     """Load poem IDs with the specified color from the CSV file."""
@@ -78,6 +109,9 @@ def play_audio_file(file_path):
 
 def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
     """Play the audio files for the given poem IDs in random order."""
+    global lock_pause
+    lock_pause = False
+
     random.shuffle(poems)
     retake_list = []
 
@@ -85,46 +119,54 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
         first_half = os.path.join(audio_dir, reader_id, f"{int(poem.id):03d}_1.mp3")
         second_half = os.path.join(audio_dir, reader_id, f"{int(poem.id):03d}_2.mp3")
 
-        print(f"\r -> Playing #{poem.id}")
+        print(f" 🞂 Playing #{poem.id:3} ", end="")
         play_audio_file(first_half)
         if not args.no_second_half:
             time.sleep(args.middle_pause)  # Pause between first and second halves
             play_audio_file(second_half)
         if args.log:
-            print(f"\r --> {poem.upper} / {poem.lower} ")
+            print(f"【[yellow]{poem.upper}{"　"*(7-len(poem.upper))}　[/yellow]／[yellow]　{poem.lower}{"　"*(10-len(poem.lower))}[/yellow]】")
+        else:
+            print(" "*14)
         if args.beep:
             chime.info()
         if args.study_mode:
+            lock_pause = True
             retake = None
             while retake is None:
-                print("\r --> Press 'm' if memorized, any other if not: ", end="", flush=True)
+                print(" [bright_black]🞂 Press 'm' if memorized, 'n' if not. [/bright_black]", end="\r")
                 with keyboard.Events() as events:
                     # Block for as much as possible
                     event = events.get(1e6)
-                    if event.key == keyboard.KeyCode.from_char('m'): #type: ignore
-                        retake = False
-                    else:
+                    if event.key == keyboard.KeyCode.from_char('m') and isinstance(event, keyboard.Events.Press): #type: ignore
                         retake = True
+                    if event.key == keyboard.KeyCode.from_char('n') and isinstance(event, keyboard.Events.Press): #type: ignore
+                        retake = False
             
             if retake:
-                print("\n\r --> Reusing")
+                print("", end="\033[F\r")
+                print("[green] 🞂[/green]")
                 retake_list = retake_list + [poem]
             else:
-                print("\n\r --> Not reusing")
+                print("", end="\033[F\r")
+                print("[red] 🞂[/red]")
+            print(" "*50, end="\r")
+            lock_pause = False
 
         if args.confirm and not args.study_mode:
-            input("\r --> Press enter to continue. ")
+            print(" [bright_black]🞂 Press enter to continue[/bright_black]", end="\r")
+            wait_until_enter()
+            print(" "*30, end="\r")
             
+        print(f" [bright_black]🞂 Waiting...[bright_black]", end="\r")
         time.sleep(args.pause)  # Pause before the next poem
         
+    lock_pause = True
     return retake_list
 
 def main():
     global args
     
-    pygame.init()  # Initialize pygame mixer
-    pygame.mixer.init()
-
     parser = argparse.ArgumentParser(description="Karuta Random Player")
     parser.add_argument("-c", "--color", default='all', help="Color of the poems to practice (e.g., 'pink', 'blue', ... or 'all'). Default is all. Plus can be used to combine multiple.")
     parser.add_argument("-r", "--reader", default="B", help="Reader ID (default: 'B')")
@@ -159,12 +201,14 @@ def main():
         print(f"No poems found for color '{args.color}'.")
         return
 
-    print(f"\nLoaded {len(poems)} poems with color(s) '{args.color}'")
-    print(f"Starting practice with reader '{args.reader}'.")
+    print(f"[bold]\nLoaded {len(poems)} poems with color '{args.color}'.[/bold]")
+    print(f"[bold]Starting practice with reader '{args.reader}'.[/bold]")
     
     print("")
     while poems != []:
         input(f"Setup cards and confirm with enter to start.")
+        print()
+
         poems = play_audio_files(poems, args.reader)
         if len(poems) > 0:
             print(f"\nRestarting with {len(poems)} bad ones.")
