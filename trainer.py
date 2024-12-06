@@ -25,6 +25,13 @@ console = Console()
 print = console.print
 input = console.input
 
+import signal
+def signal_handler(sig, frame):
+    print('[bold red]\n\nQuitting![/bold red]')
+    sys.exit(0)
+signal.signal(signal.SIGINT, signal_handler)
+
+### Enf of imports
 
 args: Any = None #type: ignore
 
@@ -82,7 +89,13 @@ def load_poem_ids_by_color(csv_file, color):
                 if len(row) < 2:
                     continue  # Skip invalid rows
                 if row[1].strip() == color:
-                    poem_ids.append(dotdict({"id": row[0].strip(), "upper": row[6].strip(), "lower": row[7].strip()}))
+                    poem_ids.append(dotdict({ \
+                        "id": row[0].strip(), \
+                        "upper": row[6].strip(), \
+                        "lower": row[7].strip(), \
+                        "first": row[13].strip()+row[14].strip()+row[15].strip(), \
+                        "second": row[16].strip()+row[17].strip() \
+                    }))
     except FileNotFoundError:
         print(f"Error: CSV file '{csv_file}' not found.")
     except Exception as e:
@@ -121,15 +134,21 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
 
         print(f" 🞂 Playing #{poem.id:3} ", end="")
         play_audio_file(first_half)
+        if args.beep:
+            chime.info()
         if not args.no_second_half:
             time.sleep(args.middle_pause)  # Pause between first and second halves
             play_audio_file(second_half)
         if args.log:
-            print(f"【[yellow]{poem.upper}{"　"*(7-len(poem.upper))}　[/yellow]／[yellow]　{poem.lower}{"　"*(10-len(poem.lower))}[/yellow]】")
+            print(f"【", end="")
+            print(f"[yellow]{poem.upper}[/yellow]", end="")
+            print(f"[grey30]{poem.first[len(poem.upper):8]}[/grey30]", end="")
+            print(f"／", end="")
+            print(f"[yellow]{poem.lower}[/yellow]", end="")
+            print(f"[grey30]{poem.second[len(poem.lower):8]}[/grey30]", end="")
+            print(f"】")
         else:
             print(" "*14)
-        if args.beep:
-            chime.info()
         if args.study_mode:
             lock_pause = True
             retake = None
