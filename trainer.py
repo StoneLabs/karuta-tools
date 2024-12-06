@@ -164,11 +164,11 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
             
             if retake:
                 print("", end="\033[F\r")
-                print("[green] 🞂[/green]")
+                print("[red] 🞂[/red]")
                 retake_list = retake_list + [poem]
             else:
                 print("", end="\033[F\r")
-                print("[red] 🞂[/red]")
+                print("[green] 🞂[/green]")
             print(" "*50, end="\r")
             lock_pause = False
 
