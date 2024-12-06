@@ -51,17 +51,27 @@ def toggle_pause():
         pygame.mixer.music.unpause()
     print(f'{"[bright_black] ‹Paused› [/bright_black]" if paused else "[bright_black]‹Unpaused›[/bright_black]"}', end="\b"*10)
 
+def push_skip():
+    if pygame.mixer.music.get_busy():
+        pygame.mixer.music.stop()
+
+def push_reset():
+    if pygame.mixer.music.get_busy():
+        pygame.mixer.music.rewind()
+
+listener = keyboard.GlobalHotKeys({
+        '<space>': toggle_pause,
+        's': push_skip,
+        'r': push_reset})
+listener.start()
+tty.setcbreak(sys.stdin.fileno())
+
 def wait_until_enter():
     global lock_pause
     
     lock_pause = True
     input()
     lock_pause = False
-
-listener = keyboard.GlobalHotKeys({
-        '<space>': toggle_pause})
-listener.start()
-tty.setcbreak(sys.stdin.fileno())
 
 # Map English color names to Japanese kanji
 COLOR_MAPPING = {
@@ -78,7 +88,7 @@ class dotdict(dict):
     __setattr__ = dict.__setitem__
 __delattr__ = dict.__delitem__
 
-def load_poem_ids_by_color(csv_file, color):
+def load_poem_ids_by_color(csv_file, color, id=None):
     """Load poem IDs with the specified color from the CSV file."""
     poem_ids = []
     try:
@@ -88,7 +98,7 @@ def load_poem_ids_by_color(csv_file, color):
             for row in reader:
                 if len(row) < 2:
                     continue  # Skip invalid rows
-                if row[1].strip() == color:
+                if row[1].strip() == color or int(row[0].strip()) == id:
                     poem_ids.append(dotdict({ \
                         "id": row[0].strip(), \
                         "upper": row[6].strip(), \
@@ -187,7 +197,7 @@ def main():
     global args
     
     parser = argparse.ArgumentParser(description="Karuta Random Player")
-    parser.add_argument("-c", "--color", default='all', help="Color of the poems to practice (e.g., 'pink', 'blue', ... or 'all'). Default is all. Plus can be used to combine multiple.")
+    parser.add_argument("-f", "--filter", default='all', help="ID or Color of the poems to practice (e.g., 1, 100, 'pink', 'blue', ... or 'all'). Default is all. Plus can be used to combine multiple.")
     parser.add_argument("-r", "--reader", default="B", help="Reader ID (default: 'B')")
     parser.add_argument("--no-second-half", default=False, action='store_true', help="Don't play second half")
     parser.add_argument("--middle-pause", default=1, type=int, help="Pause between first and second half")
@@ -195,21 +205,26 @@ def main():
     parser.add_argument("-l", "--log", default=False, action='store_true', help="Print poem kimariji after playback")
     parser.add_argument("-b", "--beep", default=False, action='store_true', help="Plays beep sound after first half")
     parser.add_argument("-s", "--study-mode", default=False, action='store_true', help="After each poem, review is required. After all have been played, the program will restart with the ones that received a bad review.")
-    parser.add_argument("--confirm", default=False, action='store_true', help="Pause after each poem until confirmation from user (no effect with --study-mode)")
+    parser.add_argument("-c", "--confirm", default=False, action='store_true', help="Pause after each poem until confirmation from user (no effect with --study-mode)")
 
     args = parser.parse_args()
     csv_file = "hyakuninissyu-csv/data.csv"
 
     poems = []
 
-    if args.color.lower().strip() == "all":
-        args.color = '+'.join(COLOR_MAPPING.keys())
+    if args.filter.lower().strip() == "all":
+        args.filter = '+'.join(COLOR_MAPPING.keys())
 
-    for color in args.color.split("+"):
+    for filter in args.filter.split("+"):
+        if filter.isdigit():
+            id = int(filter)
+            poems = poems + load_poem_ids_by_color(csv_file, None, id=id)
+            continue
+
         # Convert English color name to Japanese kanji
-        color_jp = COLOR_MAPPING.get(color.lower().strip())
+        color_jp = COLOR_MAPPING.get(filter.lower().strip())
         if not color_jp:
-            print(f"Error: Invalid color '{color}'. Valid options are: {', '.join(COLOR_MAPPING.keys())}")
+            print(f"Error: Invalid color '{filter}'. Valid options are: {', '.join(COLOR_MAPPING.keys())}")
             return
 
         poems = poems + load_poem_ids_by_color(csv_file, color_jp)
@@ -217,11 +232,12 @@ def main():
 
     # Load poem IDs
     if not poems:
-        print(f"No poems found for color '{args.color}'.")
+        print(f"No poems found for filter '{args.filter}'.")
         return
 
-    print(f"[bold]\nLoaded {len(poems)} poems with color '{args.color}'.[/bold]")
+    print(f"[bold]\nLoaded {len(poems)} poems with filter '{args.filter}'.[/bold]")
     print(f"[bold]Starting practice with reader '{args.reader}'.[/bold]")
+    print(f"[bright_black]Space = Pause | S = Skip | R = Reset[/bright_black]")
     
     print("")
     while poems != []:
