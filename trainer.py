@@ -132,6 +132,9 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
         first_half = os.path.join(audio_dir, reader_id, f"{int(poem.id):03d}_1.mp3")
         second_half = os.path.join(audio_dir, reader_id, f"{int(poem.id):03d}_2.mp3")
 
+        print(f" [bright_black]🞂 Waiting...[bright_black]", end="\r")
+        time.sleep(args.pause)  # Pause before the next poem
+        
         print(f" 🞂 Playing #{poem.id:3} ", end="")
         play_audio_file(first_half)
         if args.beep:
@@ -176,10 +179,7 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
             print(" [bright_black]🞂 Press enter to continue[/bright_black]", end="\r")
             wait_until_enter()
             print(" "*30, end="\r")
-            
-        print(f" [bright_black]🞂 Waiting...[bright_black]", end="\r")
-        time.sleep(args.pause)  # Pause before the next poem
-        
+                    
     lock_pause = True
     return retake_list
 
