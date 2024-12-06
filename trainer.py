@@ -158,9 +158,9 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
                     # Block for as much as possible
                     event = events.get(1e6)
                     if event.key == keyboard.KeyCode.from_char('m') and isinstance(event, keyboard.Events.Press): #type: ignore
-                        retake = True
-                    if event.key == keyboard.KeyCode.from_char('n') and isinstance(event, keyboard.Events.Press): #type: ignore
                         retake = False
+                    if event.key == keyboard.KeyCode.from_char('n') and isinstance(event, keyboard.Events.Press): #type: ignore
+                        retake = True
             
             if retake:
                 print("", end="\033[F\r")
