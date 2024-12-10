@@ -146,17 +146,23 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
         time.sleep(args.pause)  # Pause before the next poem
         
         print(f" 🞂 Playing #{poem.id:3} ", end="")
-        play_audio_file(first_half)
-        if args.beep:
+        if not args.text:
+            play_audio_file(first_half)
+        if args.beep and not args.text:
             chime.info()
-        if not args.no_second_half:
+        if not args.text and not args.no_second_half:
             time.sleep(args.middle_pause)  # Pause between first and second halves
             play_audio_file(second_half)
-        if args.log:
+        if args.log or args.text:
             print(f"【", end="")
             print(f"[yellow]{poem.upper}[/yellow]", end="")
             print(f"[grey30]{poem.first[len(poem.upper):8]}[/grey30]", end="")
             print(f"／", end="")
+            print(f"[bright_black]waiting...[/bright_black]", end="\b"*10)
+            if args.text:
+                time.sleep(args.middle_pause)
+                if args.beep:
+                    chime.info()
             print(f"[yellow]{poem.lower}[/yellow]", end="")
             print(f"[grey30]{poem.second[len(poem.lower):8]}[/grey30]", end="")
             print(f"】")
@@ -206,6 +212,7 @@ def main():
     parser.add_argument("-b", "--beep", default=False, action='store_true', help="Plays beep sound after first half")
     parser.add_argument("-s", "--study-mode", default=False, action='store_true', help="After each poem, review is required. After all have been played, the program will restart with the ones that received a bad review.")
     parser.add_argument("-c", "--confirm", default=False, action='store_true', help="Pause after each poem until confirmation from user (no effect with --study-mode)")
+    parser.add_argument("-t", "--text", default=False, action='store_true', help="No audio playback. Only upper kimariji is printed.")
 
     args = parser.parse_args()
     csv_file = "hyakuninissyu-csv/data.csv"
@@ -236,7 +243,10 @@ def main():
         return
 
     print(f"[bold]\nLoaded {len(poems)} poems with filter '{args.filter}'.[/bold]")
-    print(f"[bold]Starting practice with reader '{args.reader}'.[/bold]")
+    if args.text:
+        print(f"[bold]Starting practice text mode.[/bold]")
+    else:
+        print(f"[bold]Starting practice with reader '{args.reader}'.[/bold]")
     print(f"[bright_black]Space = Pause | S = Skip | R = Reset[/bright_black]")
     
     print("")
