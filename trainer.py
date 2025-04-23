@@ -142,10 +142,27 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
         first_half = os.path.join(audio_dir, reader_id, f"{int(poem.id):03d}_1.mp3")
         second_half = os.path.join(audio_dir, reader_id, f"{int(poem.id):03d}_2.mp3")
 
+        if args.reverse:
+            # swap order of audio files
+            first_half, second_half = second_half, first_half
+
         print(f" [bright_black]🞂 Waiting...[bright_black]", end="\r")
         time.sleep(args.pause)  # Pause before the next poem
         
-        print(f" 🞂 Playing #{poem.id:3} ", end="")
+        text_upper = f"[yellow]{poem.upper}[/yellow][grey30]{poem.first[len(poem.upper):8]}[/grey30]"                                                              
+        text_lower = f"[yellow]{poem.lower}[/yellow][grey30]{poem.second[len(poem.lower):8]}[/grey30]"                                                              
+        
+        if args.reverse:
+            text_upper, text_lower = text_lower, text_upper
+
+        if not args.hide_number:
+            print(f" 🞂 Playing #{poem.id:3} ", end="")
+        else:
+            print(f" 🞂 Playing #[cyan]???[/cyan] ", end="")
+
+        if args.reverse:
+            print("下ｰ>上", end="")
+
         if not args.text:
             play_audio_file(first_half)
         if args.beep and not args.text:
@@ -155,16 +172,14 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
             play_audio_file(second_half)
         if args.log or args.text:
             print(f"【", end="")
-            print(f"[yellow]{poem.upper}[/yellow]", end="")
-            print(f"[grey30]{poem.first[len(poem.upper):8]}[/grey30]", end="")
+            print(f"[yellow]{text_upper}[/yellow]", end="")
             print(f"／", end="")
             print(f"[bright_black]waiting...[/bright_black]", end="\b"*10)
             if args.text:
                 time.sleep(args.middle_pause)
                 if args.beep:
                     chime.info()
-            print(f"[yellow]{poem.lower}[/yellow]", end="")
-            print(f"[grey30]{poem.second[len(poem.lower):8]}[/grey30]", end="")
+            print(f"[yellow]{text_lower}[/yellow]", end="")
             print(f"】")
         else:
             print(" "*14)
@@ -213,6 +228,8 @@ def main():
     parser.add_argument("-s", "--study-mode", default=False, action='store_true', help="After each poem, review is required. After all have been played, the program will restart with the ones that received a bad review.")
     parser.add_argument("-c", "--confirm", default=False, action='store_true', help="Pause after each poem until confirmation from user (no effect with --study-mode)")
     parser.add_argument("-t", "--text", default=False, action='store_true', help="No audio playback. Only upper kimariji is printed.")
+    parser.add_argument("--reverse", default=False, action='store_true', help="Poems are asked 下→上 instead of the the normal way")
+    parser.add_argument("--hide-number", default=False, action="store_true", help="Hides ID of Poem")
 
     args = parser.parse_args()
     csv_file = "hyakuninissyu-csv/data.csv"
