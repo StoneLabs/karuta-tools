@@ -152,6 +152,9 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
         text_upper = f"[yellow]{poem.upper}[/yellow][grey30]{poem.first[len(poem.upper):8]}[/grey30]"                                                              
         text_lower = f"[yellow]{poem.lower}[/yellow][grey30]{poem.second[len(poem.lower):8]}[/grey30]"                                                              
         
+        speed_study = args.study_mode and args.speed_check
+        retake = None
+
         if args.reverse:
             text_upper, text_lower = text_lower, text_upper
 
@@ -167,25 +170,45 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
             play_audio_file(first_half)
         if args.beep and not args.text:
             chime.info()
-        if not args.text and not args.no_second_half:
+        if not args.text and not args.no_second_half and not speed_study:
             time.sleep(args.middle_pause)  # Pause between first and second halves
             play_audio_file(second_half)
         if args.log or args.text:
             print(f"【", end="")
             print(f"[yellow]{text_upper}[/yellow]", end="")
             print(f"／", end="")
-            print(f"[bright_black]waiting...[/bright_black]", end="\b"*10)
-            if args.text:
+            if speed_study:
+                print(f"[bright_black]press m once recalled![/bright_black]", end="\b"*22)
+            else:
+                print(f"[bright_black]waiting...[/bright_black]", end="\b"*10)
+            time_taken = None
+            if speed_study:
+                start_time = int(time.time()*1000.0)
+                while True:
+                    with keyboard.Events() as events:
+                        event = events.get(1e6)
+                        if event.key == keyboard.KeyCode.from_char('m') and isinstance(event, keyboard.Events.Press):
+                            break
+                end_time = int(time.time()*1000.0)
+                time_taken = end_time - start_time
+                if time_taken > args.speed_check_threshhold:
+                    retake = True
+                else:
+                    retake = False
+            if args.text and not speed_study:
                 time.sleep(args.middle_pause)
                 if args.beep:
                     chime.info()
             print(f"[yellow]{text_lower}[/yellow]", end="")
-            print(f"】")
+            print(f"】", end="")
+            if time_taken is not None:
+                print(f"{time_taken}ms")
+            else:
+                print("")
         else:
             print(" "*14)
         if args.study_mode:
             lock_pause = True
-            retake = None
             while retake is None:
                 print(" [bright_black]🞂 Press 'm' if memorized, 'n' if not. [/bright_black]", end="\r")
                 with keyboard.Events() as events:
@@ -226,6 +249,8 @@ def main():
     parser.add_argument("-l", "--log", default=False, action='store_true', help="Print poem kimariji after playback")
     parser.add_argument("-b", "--beep", default=False, action='store_true', help="Plays beep sound after first half")
     parser.add_argument("-s", "--study-mode", default=False, action='store_true', help="After each poem, review is required. After all have been played, the program will restart with the ones that received a bad review.")
+    parser.add_argument("--speed-check", default=False, action='store_true', help="Automatically answers memorized/not memorized based on reaction speed. (In study mode)")
+    parser.add_argument("--speed-check-threshhold", default=2000, type=int, help="Threashold for speed check mode. Default is 2000 (in ms)")
     parser.add_argument("-c", "--confirm", default=False, action='store_true', help="Pause after each poem until confirmation from user (no effect with --study-mode)")
     parser.add_argument("-t", "--text", default=False, action='store_true', help="No audio playback. Only upper kimariji is printed.")
     parser.add_argument("--reverse", default=False, action='store_true', help="Poems are asked 下→上 instead of the the normal way")
