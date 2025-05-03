@@ -244,6 +244,22 @@ def main():
             id = int(filter)
             poems = poems + load_poem_ids_by_color(csv_file, None, id=id)
             continue
+        
+        rangeFilter = filter.split("-")
+        if len(rangeFilter) == 2:
+            if rangeFilter[0].isdigit() and rangeFilter[1].isdigit():
+                rangeLower = int(rangeFilter[0])
+                rangeUpper = int(rangeFilter[1])
+                if rangeUpper < rangeLower:
+                    print(f"Error: Invalid range order '{filter}'")
+                    return
+                for id in range(rangeLower, rangeUpper + 1):
+                    poems = poems + load_poem_ids_by_color(csv_file, None, id=id)
+                continue
+            else:
+                print(f"Error Invalid non-digit range parts '{filter}'")
+                return
+            
 
         # Convert English color name to Japanese kanji
         color_jp = COLOR_MAPPING.get(filter.lower().strip())
@@ -253,6 +269,7 @@ def main():
 
         poems = poems + load_poem_ids_by_color(csv_file, color_jp)
 
+    
 
     # Load poem IDs
     if not poems:
