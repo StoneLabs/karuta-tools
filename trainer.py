@@ -175,6 +175,8 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
 
         if args.reverse:
             print("下ｰ>上", end="")
+        else:
+            print("上->下", end="")
 
         if not args.text:
             play_audio_file(first_half)
