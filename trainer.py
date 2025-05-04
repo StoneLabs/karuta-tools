@@ -273,6 +273,7 @@ def main():
     parser.add_argument("-t", "--text", default=False, action='store_true', help="No audio playback. Only upper kimariji is printed.")
     parser.add_argument("--reverse", default=False, action='store_true', help="Poems are asked 下→上 instead of the the normal way")
     parser.add_argument("--hide-number", default=False, action="store_true", help="Hides ID of Poem")
+    parser.add_argument("--allow-duplicates", default=False, action="store_true", help="Disables the automatic removal of duplicate cards in the input filter")
 
     args = parser.parse_args()
     csv_file = "hyakuninissyu-csv/data.csv"
@@ -313,7 +314,10 @@ def main():
         poems = poems + load_poem_ids_by_color(csv_file, color_jp)
 
     prefilter_poems = poems
-    poems = remove_duplicate_poems_by_id(poems)
+    if args.allow_duplicates:
+        poems = poems
+    else:
+        poems = remove_duplicate_poems_by_id(poems)
 
     # Load poem IDs
     if not poems:
