@@ -112,6 +112,16 @@ def load_poem_ids_by_color(csv_file, color, id=None):
         print(f"Error reading CSV file: {e}")
     return poem_ids
 
+def remove_duplicate_poems_by_id(poems):
+    """Remove duplicate poems based on the 'id' field."""
+    seen_ids = set()
+    unique_poems = []
+    for poem in poems:
+        if poem.id not in seen_ids:
+            seen_ids.add(poem.id)
+            unique_poems.append(poem)
+    return unique_poems
+
 def play_audio_file(file_path):
     """Play a single audio file using pygame.mixer with pause functionality."""
     if os.path.exists(file_path):
@@ -178,10 +188,11 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
             print(f"[yellow]{text_upper}[/yellow]", end="")
             print(f"／", end="")
             if speed_study:
-                print(f"[bright_black]press m once recalled![/bright_black]", end="\b"*22)
+                print(f"[bright_black]press n/m[/bright_black]", end="\b"*9)
             else:
                 print(f"[bright_black]waiting...[/bright_black]", end="\b"*10)
             time_taken = None
+            forgotten_ovr = False
             if speed_study:
                 start_time = int(time.time()*1000.0)
                 while True:
@@ -189,9 +200,12 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
                         event = events.get(1e6)
                         if event.key == keyboard.KeyCode.from_char('m') and isinstance(event, keyboard.Events.Press):
                             break
+                        if event.key == keyboard.KeyCode.from_char('n') and isinstance(event, keyboard.Events.Press):
+                            forgotten_ovr = True
+                            break
                 end_time = int(time.time()*1000.0)
                 time_taken = end_time - start_time
-                if time_taken > args.speed_check_threshhold:
+                if forgotten_ovr == True or time_taken > args.speed_check_threshhold:
                     retake = True
                 else:
                     retake = False
@@ -202,7 +216,11 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
             print(f"[yellow]{text_lower}[/yellow]", end="")
             print(f"】", end="")
             if time_taken is not None:
-                print(f"{time_taken}ms")
+                if forgotten_ovr == True:
+                    print(f"forgotten...")
+                    time.sleep(1)
+                else:
+                    print(f"{time_taken}ms")
             else:
                 print("")
         else:
@@ -294,14 +312,18 @@ def main():
 
         poems = poems + load_poem_ids_by_color(csv_file, color_jp)
 
-    
+    prefilter_poems = poems
+    poems = remove_duplicate_poems_by_id(poems)
 
     # Load poem IDs
     if not poems:
         print(f"No poems found for filter '{args.filter}'.")
         return
 
-    print(f"[bold]\nLoaded {len(poems)} poems with filter '{args.filter}'.[/bold]")
+    if len(prefilter_poems) != len(poems):
+        print(f"[bold]\nLoaded {len(poems)} poems with filter '{args.filter}'. (overlaps removed)[/bold]")
+    else:
+        print(f"[bold]\nLoaded {len(poems)} poems with filter '{args.filter}'.[/bold]")
     if args.text:
         print(f"[bold]Starting practice text mode.[/bold]")
     else:
