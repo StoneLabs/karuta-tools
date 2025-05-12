@@ -207,10 +207,18 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
             print(f"／", end="")
             if speed_study:
                 print(f"[bright_black]press n/m[/bright_black]", end="\b"*9)
+            elif args.manual_second:
+                print(f"[bright_black]press dot[/bright_black]", end="\b"*9)
             else:
                 print(f"[bright_black]waiting...[/bright_black]", end="\b"*10)
             time_taken = None
             forgotten_ovr = False
+            if args.manual_second and not speed_study:
+                while True:
+                    with keyboard.Events() as events:
+                        event = events.get(1e6)
+                        if event.key == keyboard.KeyCode.from_char('.') and isinstance(event, keyboard.Events.Press):
+                            break
             if speed_study:
                 start_time = int(time.time()*1000.0)
                 while True:
@@ -227,7 +235,7 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
                     retake = True
                 else:
                     retake = False
-            if args.text and not speed_study:
+            if args.text and not speed_study and not args.manual_second:
                 time.sleep(args.middle_pause)
                 if args.beep:
                     chime.info()
@@ -285,6 +293,7 @@ def main():
     parser.add_argument("-l", "--log", default=False, action='store_true', help="Print poem kimariji after playback")
     parser.add_argument("-b", "--beep", default=False, action='store_true', help="Plays beep sound after first half")
     parser.add_argument("-s", "--study-mode", default=False, action='store_true', help="After each poem, review is required. After all have been played, the program will restart with the ones that received a bad review.")
+    parser.add_argument("--manual-second", default=False, action='store_true', help="Doesn't show/play second half until user input (no effect in --speed-check mode")
     parser.add_argument("--speed-check", default=False, action='store_true', help="Automatically answers memorized/not memorized based on reaction speed. (In study mode)")
     parser.add_argument("--speed-check-threshhold", default=2000, type=int, help="Threashold for speed check mode. Default is 2000 (in ms)")
     parser.add_argument("-c", "--confirm", default=False, action='store_true', help="Pause after each poem until confirmation from user (no effect with --study-mode)")
