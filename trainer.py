@@ -159,9 +159,25 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
         print(f" [bright_black]🞂 Waiting...[bright_black]", end="\r")
         time.sleep(args.pause)  # Pause before the next poem
         
-        text_upper = f"[yellow]{poem.upper}[/yellow][grey30]{poem.first[len(poem.upper):8]}[/grey30]"                                                              
-        text_lower = f"[yellow]{poem.lower}[/yellow][grey30]{poem.second[len(poem.lower):8]}[/grey30]"                                                              
-        
+
+        upper_hint_text, lower_hint_text = "", ""
+        if args.full_length:
+            upper_hint_text = poem.first[len(poem.upper):] + "　"*(19-len(poem.first))
+            lower_hint_text = poem.second[len(poem.lower):] + "　"*(15-len(poem.second))
+        else:
+            upper_hint_text, lower_hint_text = poem.first[len(poem.upper):8], poem.second[len(poem.lower):8]
+
+        text_upper, text_lower = "", ""
+        if not args.kimariji_question:
+            text_upper = f"[yellow]{poem.upper}[/yellow][grey30]{upper_hint_text}[/grey30]"
+            text_lower = f"[yellow]{poem.lower}[/yellow][grey30]{lower_hint_text}[/grey30]"
+        elif args.kimariji_question and not args.reverse:
+            text_upper = f"[yellow]{poem.upper}[/yellow][grey30]{"　"*(8-len(poem.upper))}[/grey30]"
+            text_lower = f"[yellow]{poem.upper}[/yellow][grey30]{upper_hint_text}[/grey30][yellow]{poem.lower}[/yellow][grey30]{lower_hint_text}[/grey30]"
+        elif args.kimariji_question and args.reverse:
+            text_upper = f"[yellow]{poem.upper}[/yellow][grey30]{upper_hint_text}[/grey30][yellow]{poem.lower}[/yellow][grey30]{lower_hint_text}[/grey30]"
+            text_lower = f"[yellow]{poem.lower}[/yellow][grey30]{"　"*(8-len(poem.lower))}[/grey30]"
+
         speed_study = args.study_mode and args.speed_check
         retake = None
 
@@ -276,6 +292,8 @@ def main():
     parser.add_argument("--reverse", default=False, action='store_true', help="Poems are asked 下→上 instead of the the normal way")
     parser.add_argument("--hide-number", default=False, action="store_true", help="Hides ID of Poem")
     parser.add_argument("--allow-duplicates", default=False, action="store_true", help="Disables the automatic removal of duplicate cards in the input filter")
+    parser.add_argument("--full-length", default=False, action="store_true", help="Print full 下の句 and 上の句")
+    parser.add_argument("--kimariji-question", default=False, action="store_true", help="Question only shows kimariji. If --full-length is set, the other side is the entire poem, in its entirety.")
 
     args = parser.parse_args()
     csv_file = "hyakuninissyu-csv/data.csv"
