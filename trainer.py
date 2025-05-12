@@ -219,7 +219,8 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
                         event = events.get(1e6)
                         if event.key == keyboard.KeyCode.from_char('.') and isinstance(event, keyboard.Events.Press):
                             break
-                play_audio_file(second_half)
+                if not args.text and not args.no_second_half:
+                    play_audio_file(second_half)
             if speed_study:
                 start_time = int(time.time()*1000.0)
                 while True:
