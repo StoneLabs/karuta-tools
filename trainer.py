@@ -198,7 +198,7 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
             play_audio_file(first_half)
         if args.beep and not args.text:
             chime.info()
-        if not args.text and not args.no_second_half and not speed_study:
+        if not args.text and not args.no_second_half and not speed_study and not args.manual_second:
             time.sleep(args.middle_pause)  # Pause between first and second halves
             play_audio_file(second_half)
         if args.log or args.text:
@@ -219,6 +219,7 @@ def play_audio_files(poems, reader_id, audio_dir="./audio_files"):
                         event = events.get(1e6)
                         if event.key == keyboard.KeyCode.from_char('.') and isinstance(event, keyboard.Events.Press):
                             break
+                play_audio_file(second_half)
             if speed_study:
                 start_time = int(time.time()*1000.0)
                 while True:
@@ -288,12 +289,12 @@ def main():
     parser.add_argument("-f", "--filter", default='all', help="ID or Color of the poems to practice (e.g., 1, 100, 'pink', 'blue', ... or 'all'). Default is all. Plus can be used to combine multiple.")
     parser.add_argument("-r", "--reader", default="B", help="Reader ID (default: 'B')")
     parser.add_argument("--no-second-half", default=False, action='store_true', help="Don't play second half")
-    parser.add_argument("--middle-pause", default=1, type=int, help="Pause between first and second half")
-    parser.add_argument("-p", "--pause", default=5, type=int, help="Pause between poems in seconds.")
+    parser.add_argument("--middle-pause", default=3, type=int, help="Pause between first and second half")
+    parser.add_argument("-p", "--pause", default=1, type=int, help="Pause between poems in seconds.")
     parser.add_argument("-l", "--log", default=False, action='store_true', help="Print poem kimariji after playback")
     parser.add_argument("-b", "--beep", default=False, action='store_true', help="Plays beep sound after first half")
     parser.add_argument("-s", "--study-mode", default=False, action='store_true', help="After each poem, review is required. After all have been played, the program will restart with the ones that received a bad review.")
-    parser.add_argument("--manual-second", default=False, action='store_true', help="Doesn't show/play second half until user input (no effect in --speed-check mode")
+    parser.add_argument("-m", "--manual-second", default=False, action='store_true', help="Doesn't show/play second half until user input (no effect in --speed-check mode. No effect if --log (or --text (or --text)) is not used.")
     parser.add_argument("--speed-check", default=False, action='store_true', help="Automatically answers memorized/not memorized based on reaction speed. (In study mode)")
     parser.add_argument("--speed-check-threshhold", default=2000, type=int, help="Threashold for speed check mode. Default is 2000 (in ms)")
     parser.add_argument("-c", "--confirm", default=False, action='store_true', help="Pause after each poem until confirmation from user (no effect with --study-mode)")
